@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 type TArea = { id: number, title: string, x: number, y: number, width: number, height: number, relatedTo?: number[] }
 
 export default function Home() {
+    const CANVAS_SIZE = { width: 800, height: 800 }
+
+    const [draggingAreaId, setDraggingAreaId] = useState<number | null>(null)
+    const [dragOffset, setDragOffset] = useState<{ x: number, y: number }>({ x: 0, y: 0 })
 
     const [areas, setAreas] = useState<TArea[]>([
         { id: 1, title: 'greek works', x: 20, y: 20, width: 100, height: 60 },
@@ -25,6 +29,11 @@ export default function Home() {
             title: 'Aristotel works',
             x: 50, y: 250
             , relatedTo: [1], width: 100, height: 60
+        },
+        {
+            id: 5, title: 'The Iliad', x: 250, y: 40, relatedTo: [2], width: 100, height: 60
+        }, {
+            id: 6, title: 'The Odyssey', x: 350, y: 80, relatedTo: [2], width: 100, height: 60
         }
 
 
@@ -39,12 +48,14 @@ export default function Home() {
 
         drawAreas(canvas, areas)
 
-    }, [canvasRef])
+    }, [canvasRef, areas])
 
     function drawAreas(canvas: HTMLCanvasElement, areaList: TArea[]) {
         const ctx = canvas.getContext('2d')
 
         if (!ctx) return
+
+        ctx.clearRect(0, 0, CANVAS_SIZE.width, CANVAS_SIZE.height)
 
         // draw relation lines
         for (const area of areas) {
@@ -101,7 +112,69 @@ export default function Home() {
         }
     }
 
+    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const rect = canvasRef.current?.getBoundingClientRect()
+        if (!rect) return
+
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        const clickedArticle = areas.find(area =>
+            x >= area.x && x <= area.x + area.width &&
+            y >= area.y && y <= area.y + area.height
+        )
+
+        if (clickedArticle) {
+            setDraggingAreaId(clickedArticle.id)
+            setDragOffset({
+                x: x - clickedArticle.x,
+                y: y - clickedArticle.y
+            })
+        }
+    }
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (draggingAreaId === null) return
+
+        const rect = canvasRef.current?.getBoundingClientRect()
+        if (!rect) return
+
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        setAreas(areas.map(area =>
+            area.id === draggingAreaId
+                ? { ...area, x: x - dragOffset.x, y: y - dragOffset.y }
+                : area
+        ))
+    }
+
+    const handleMouseUp = () => {
+        setDraggingAreaId(null)
+    }
+
+    function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
+        const rect = canvasRef.current?.getBoundingClientRect()
+        if (!rect) return
+
+        const x = e.clientX - rect.left
+        const y = e.clientY - rect.top
+
+        const clickedArticle = areas.find(area =>
+            x >= area.x && x <= area.x + area.width &&
+            y >= area.y && y <= area.y + area.height
+        )
+
+        if (clickedArticle) {
+            console.log({
+                area: clickedArticle,
+                x: x - clickedArticle.x,
+                y: y - clickedArticle.y
+            })
+        }
+    }
+
     return (
-        <canvas ref={canvasRef} width={800} height={800} className="border border-neutral-300"> <p>fallback text</p> </canvas>
+        <canvas ref={canvasRef} onMouseDown={handleMouseDown} onClick={handleClick} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} width={CANVAS_SIZE.width} height={CANVAS_SIZE.height} className="border border-neutral-300"> <p>fallback text</p> </canvas>
     );
 }
