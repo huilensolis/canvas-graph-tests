@@ -1,9 +1,34 @@
 'use client'
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+type TArea = { id: number, title: string, x: number, y: number, width: number, height: number, relatedTo?: number[] }
 
 export default function Home() {
+
+    const [areas, setAreas] = useState<TArea[]>([
+        { id: 1, title: 'greek works', x: 20, y: 20, width: 100, height: 60 },
+        {
+            id: 2,
+            title: 'Homer works',
+            x: 150, y: 50
+            , relatedTo: [1], width: 100, height: 60
+        },
+        {
+            id: 3,
+            title: 'Plato works',
+            x: 150, y: 150
+            , relatedTo: [1], width: 100, height: 60
+        },
+        {
+            id: 4,
+            title: 'Aristotel works',
+            x: 50, y: 250
+            , relatedTo: [1], width: 100, height: 60
+        }
+
+
+    ])
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -12,38 +37,71 @@ export default function Home() {
 
         if (!canvas) return
 
-        const ctx = canvas.getContext("2d") // canvas context (the 2d canvas)
+        drawAreas(canvas, areas)
+
+    }, [canvasRef])
+
+    function drawAreas(canvas: HTMLCanvasElement, areaList: TArea[]) {
+        const ctx = canvas.getContext('2d')
 
         if (!ctx) return
 
-        // strokes
-        ctx.fillRect(20, 20, 100, 100) //   x,  y, width, height
+        // draw relation lines
+        for (const area of areas) {
+            if (!area.relatedTo) continue
 
-        ctx.clearRect(30, 30, 80, 80)
+            area.relatedTo.forEach((relatedAreaId) => {
+
+                const relatedArea = areaList.find((areaElement) => relatedAreaId === areaElement.id)
+
+                if (!relatedArea) return;
+
+                ctx.beginPath()
+
+                ctx.moveTo(area.x + (area.width / 2), area.y + (area.height / 2))
+                ctx.lineTo(relatedArea.x + (relatedArea.width / 2), relatedArea.y + (relatedArea.height / 2))
+                ctx.stroke()
+            })
+
+        }
+
+        // draw areas
+        for (const area of areas) {
+
+            // area block
+            ctx.fillStyle = 'violet'
+            ctx.fillRect(area.x, area.y, area.width, area.height)
+
+            // area border
+            ctx.strokeStyle = "gray"
+            ctx.strokeRect(area.x, area.y, area.width, area.height)
 
 
-        ctx.strokeRect(70, 10, 1, 120)
-        ctx.strokeRect(10, 70, 120, 1)
-
-        ctx.font = "30px Times New Roman";
-        ctx.strokeStyle = "green"
-        ctx.strokeText("text inside box", 40, 80)
-
-        // paths
-        ctx.beginPath()
-
-        // set starting position
-        ctx.moveTo(100, 200)
-
-        ctx.lineTo(100, 300)
-        ctx.lineTo(150, 250)
-
-        // paint
-        ctx.fillStyle = 'orange'
-        ctx.fill()
-    }, [canvasRef])
+            // area text
+            ctx.fillStyle = 'white'
+            ctx.font = '14px Arial'
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            const maxWidth = area.width - 10
+            let words = area.title.split(' ')
+            let line = ''
+            let y = area.y + area.height / 2 - 10
+            for (let i = 0; i < words.length; i++) {
+                const testLine = line + words[i] + ' '
+                const metrics = ctx.measureText(testLine)
+                if (metrics.width > maxWidth && i > 0) {
+                    ctx.fillText(line, area.x + area.width / 2, y)
+                    line = words[i] + ' '
+                    y += 20
+                } else {
+                    line = testLine
+                }
+            }
+            ctx.fillText(line, area.x + area.width / 2, y)
+        }
+    }
 
     return (
-        <canvas ref={canvasRef} width={300} height={300} className="border border-neutral-300"> <p>fallback text</p> </canvas>
+        <canvas ref={canvasRef} width={800} height={800} className="border border-neutral-300"> <p>fallback text</p> </canvas>
     );
 }
