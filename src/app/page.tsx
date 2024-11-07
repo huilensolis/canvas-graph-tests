@@ -10,6 +10,8 @@ export default function Home() {
     const [draggingAreaId, setDraggingAreaId] = useState<number | null>(null)
     const [dragOffset, setDragOffset] = useState<{ x: number, y: number }>({ x: 0, y: 0 })
 
+    const isDraggingArea = draggingAreaId !== null
+
     const [areas, setAreas] = useState<TArea[]>([
         { id: 1, title: 'greek works', x: 20, y: 20, width: 100, height: 60 },
         {
@@ -150,12 +152,16 @@ export default function Home() {
     }
 
     const handleMouseUp = () => {
-        setDraggingAreaId(null)
+        setTimeout(() => {
+            setDraggingAreaId(null)
+        }, 0)
     }
 
     function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
         const rect = canvasRef.current?.getBoundingClientRect()
         if (!rect) return
+
+        if (isDraggingArea) return
 
         const x = e.clientX - rect.left
         const y = e.clientY - rect.top
